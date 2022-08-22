@@ -1,5 +1,5 @@
-from asyncore import read
 from cmath import log
+import os
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy
@@ -42,6 +42,14 @@ def BCI_info_handler():
     
     return BCI_hits_47Ti, BCI_scale_47Ti, BCI_hits_49Ti, BCI_scale_49Ti
 
+def volume_file_reader(dir, file):
+    vol = []
+    with open(dir + '/' + file) as f:
+            stripped = [s.strip() for s in f]
+            for line in stripped:
+                vol.append(float(line))
+    return vol
+
 
 def cross_section_47Ti(BCI_hits_47Ti, BCI_scale_47Ti, volume_list): #func used to convert mass in ug/cm --> 1/barn
     rho_t_47Ti = (TARGET_47TI * CM_TO_BARN * AVAGADRO_NUM)/(MOLAR_MASS_47TI)
@@ -54,7 +62,6 @@ def cross_section_47Ti(BCI_hits_47Ti, BCI_scale_47Ti, volume_list): #func used t
         dsigma_domega = (volume_list[j] * 1000)/(N_beam * rho_t_47Ti * D_OMEGA_)  # cross-sec in mb/sr
         cross_section_vals.append(dsigma_domega)
         j +=1
-    print(cross_section_vals)
     return cross_section_vals
 
 
@@ -69,17 +76,29 @@ def cross_section_49Ti(BCI_hits_49Ti, BCI_scale_49Ti, volume_list):
         dsigma_domega = (volume_list[j] * 1000)/(N_beam * rho_t_49Ti * D_OMEGA_)  # cross-sec in mb/sr
         cross_section_vals.append(dsigma_domega)
         j +=1
-    print(cross_section_vals)
     return cross_section_vals
 
 
-def plot_cross_section(lab_angles, x_sec_1553):
-    plt.scatter(lab_angles, x_sec_1553)
+def plot_cross_section(lab_angles, x_sec, energy):
+    plt.scatter(lab_angles, x_sec)
     plt.yscale("log")
-    plt.ylim(0.01, 1)
+
+    miny=0.01
+    maxy=1
+
+    labelx = 30
+    labely = 0.5
+    for val in x_sec:
+        if val < miny:
+            miny = 0.001
+        if val > maxy:
+            maxy = 10
+            labely = 1.0
+    plt.ylim(miny, maxy)
 
     plt.minorticks_on()
 
+    plt.text(labelx, labely, energy)
     plt.ylabel(r'Cross-Section [$\frac{mb}{sr}$]')
     plt.xlabel(r'Lab Angle [$\Theta_{lab}$]')
     plt.show()
@@ -89,25 +108,21 @@ def plot_cross_section(lab_angles, x_sec_1553):
 def main():
     lab_angles = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
     BCI_hits_47Ti, BCI_scale_47Ti, BCI_hits_49Ti, BCI_scale_49Ti = BCI_info_handler()
-
-    #47Ti Peak Information and Cross Sections
-
-    vol_2295keV = [43, 77.7457332306963, 227.89418754265, 344.842876437932, 163.076816088494, 119.233963306215, 171.680097630926, 
-                    135.28742772684, 117.68680311569, 129.088164844895]
-
-    x_sec_2295 = cross_section_47Ti(BCI_hits_47Ti, BCI_scale_47Ti, vol_2295keV)
-    plot_cross_section(lab_angles, x_sec_2295)
-    
-    
-    #49Ti Peak Information and Cross Sections
-
-    vol_1553keV = [146.274290367033, 194.947937595412, 250.160644164713, 278.050425620509, 126.308096060263, 142.11518507284,
-                    244.639070350995, 126.437222617944, 178.22420628184, 128.973437231083]
-    cross_sec_1553 = cross_section_49Ti(BCI_hits_49Ti, BCI_scale_49Ti, vol_1553keV)
+    dir = os.getcwd()
+    dir_47Ti = dir + '/47Ti_peaks'
+    dir_49Ti = dir + '/49Ti_peaks'
+    for file in os.listdir(dir_47Ti):
+        vol_list = volume_file_reader(dir_47Ti, file)
+        energy = file.split('.')[0]
+        x_sec = cross_section_47Ti(BCI_hits_47Ti, BCI_scale_47Ti, vol_list)
+        plot_cross_section(lab_angles, x_sec, energy)
 
 
-
-    plot_cross_section(lab_angles, cross_sec_1553)
+    for file in os.listdir(dir_49Ti):
+        vol_list = volume_file_reader(dir_49Ti, file)
+        energy = file.split('.')[0]
+        x_sec = cross_section_47Ti(BCI_hits_49Ti, BCI_scale_49Ti, vol_list)
+        plot_cross_section(lab_angles, x_sec, energy)
 
 
 
