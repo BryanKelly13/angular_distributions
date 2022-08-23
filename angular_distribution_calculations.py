@@ -1,3 +1,4 @@
+from cProfile import label
 from cmath import log
 import os
 import matplotlib
@@ -79,26 +80,25 @@ def cross_section_49Ti(BCI_hits_49Ti, BCI_scale_49Ti, volume_list):
     return cross_section_vals
 
 
-def plot_cross_section(lab_angles, x_sec, energy):
-    plt.scatter(lab_angles, x_sec)
+def plot_cross_section(lab_angles, x_sec, energy_beforesplit):
+    name_list = energy_beforesplit.split('_')
+    energy = ' '.join(name_list)
+    print(energy)
+    plt.scatter(lab_angles, x_sec, label=energy)
     plt.yscale("log")
 
     miny=0.01
     maxy=1
-
-    labelx = 30
-    labely = 0.5
     for val in x_sec:
         if val < miny:
             miny = 0.001
         if val > maxy:
             maxy = 10
-            labely = 1.0
     plt.ylim(miny, maxy)
 
     plt.minorticks_on()
 
-    plt.text(labelx, labely, energy)
+    plt.legend(loc='upper right')
     plt.ylabel(r'Cross-Section [$\frac{mb}{sr}$]')
     plt.xlabel(r'Lab Angle [$\Theta_{lab}$]')
     plt.show()
