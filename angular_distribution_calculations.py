@@ -84,7 +84,7 @@ def plot_cross_section(lab_angles, x_sec, energy_beforesplit):
     name_list = energy_beforesplit.split('_')
     energy = ' '.join(name_list)
     print(energy)
-    plt.scatter(lab_angles, x_sec, label=energy)
+    plt.scatter(lab_angles, x_sec, label=energy + ' data')
     plt.yscale("log")
 
     miny=0.01
