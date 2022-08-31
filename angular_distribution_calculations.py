@@ -77,11 +77,15 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
     if (num_files <= 12):
         colz=3
         row = math.ceil(num_files/3)
-        fig, ax = plt.subplots(row, colz, squeeze=False, figsize=figure_size)
+        fig, ax = plt.subplots(row, colz, squeeze=False, figsize=figure_size, constrained_layout=True)
         fig.supxlabel(r'Lab Angle [$\Theta_{lab}$]')
         fig.supylabel(r'Cross-Section [$\frac{mb}{sr}$]')
+        if isotope == 47:
+            fig.suptitle(r'$^{48}$Ti Excited States')
+        else:
+            fig.suptitle(r'$^{50}$Ti Excited States')
     else:
-        # create 2 diff subplots, to be implemented later
+        # creates however many 4x4 plots are needed to fulfill all distributions
         row=4
         colz=4
         sorted_files = sorted(os.listdir(dir))
@@ -90,9 +94,13 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
         for _ in file_sets:
             curr_row = 0
             curr_col = 0
-            fig, ax = plt.subplots(colz, row, squeeze=False, figsize=figure_size)
+            fig, ax = plt.subplots(colz, row, squeeze=False, figsize=figure_size, constrained_layout=True)
             fig.supxlabel(r'Lab Angle [$\Theta_{lab}$]')
             fig.supylabel(r'Cross-Section [$\frac{mb}{sr}$]')
+            if isotope == 47:
+                fig.suptitle(r'$^{48}$Ti Excited States')
+            else:
+                fig.suptitle(r'$^{50}$Ti Excited States')
             for file in file_sets[i]:
                 miny=0.01
                 maxy=1
@@ -106,6 +114,7 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
                     ax[curr_row][curr_col].minorticks_on()
                     ax[curr_row][curr_col].legend()
                     ax[curr_row][curr_col].set_yscale("log")
+                    ax[curr_row][curr_col].set_title(plot_name)
 
                     for val in cross_sec:
                         if val < miny:
@@ -122,6 +131,7 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
                     ax[curr_row][curr_col].minorticks_on()
                     ax[curr_row][curr_col].legend()
                     ax[curr_row][curr_col].set_yscale("log")
+                    ax[curr_row][curr_col].set_title(plot_name)
 
                     for val in cross_sec:
                         if val < miny:
@@ -148,10 +158,11 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
         plot_name = ' '.join(fname_list)
         cross_sec = cross_section_calculation(BCI_hits, BCI_scale, vol_list, isotope)
         if (curr_row<row and curr_col<colz):
-            ax[curr_row][curr_col].scatter(lab_angles, cross_sec, label=plot_name)
+            ax[curr_row][curr_col].scatter(lab_angles, cross_sec)
             ax[curr_row][curr_col].minorticks_on()
             ax[curr_row][curr_col].legend()
             ax[curr_row][curr_col].set_yscale("log")
+            ax[curr_row][curr_col].set_title(plot_name)
 
             for val in cross_sec:
                 if val < miny:
@@ -164,10 +175,11 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
         elif(curr_col == colz):
             curr_row+=1
             curr_col = 0
-            ax[curr_row][curr_col].scatter(lab_angles, cross_sec, label=plot_name)
+            ax[curr_row][curr_col].scatter(lab_angles, cross_sec)
             ax[curr_row][curr_col].minorticks_on()
             ax[curr_row][curr_col].legend()
             ax[curr_row][curr_col].set_yscale("log")
+            ax[curr_row][curr_col].set_title(plot_name)
 
             for val in cross_sec:
                 if val < miny:
@@ -179,7 +191,7 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
             curr_col+=1
     plt.show()
 
-    
+
 def main():
 
     lab_angles = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
