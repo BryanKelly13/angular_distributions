@@ -17,7 +17,7 @@ Z = 1 # Number of protons in beam
 MOLAR_MASS_49TI = 4.89E7 #ug/mol
 TARGET_49TI = 413 # in micrograms/cm^2
 
-MOLAR_MASS_47TI = 4.70E7 #um/mol
+MOLAR_MASS_47TI = 4.70E7 #ug/mol
 TARGET_47TI = 441 # in micrograms/cm^2
 
 
@@ -112,6 +112,11 @@ def main():
     dir_47Ti = dir + '/47Ti_peaks'
     dir_49Ti = dir + '/49Ti_peaks'
     for file in os.listdir(dir_47Ti):
+        '''
+        To find # of subplots, just use len(files in folder)
+        Can get fancy and use modulo % operator to chuck into grids, max prolly 4x4, in energy order
+        The subplots can be spawned using subplots(i,i)
+        '''
         vol_list = volume_file_reader(dir_47Ti, file)
         energy = file.split('.')[0]
         x_sec = cross_section_47Ti(BCI_hits_47Ti, BCI_scale_47Ti, vol_list)
