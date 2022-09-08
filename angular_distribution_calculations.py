@@ -1,4 +1,3 @@
-
 import os
 import numpy as np
 import time
@@ -42,15 +41,20 @@ def BCI_info_handler():
 
 
 def volume_file_reader(dir, file):
-    vol = []
+    volume_list = []
+    err_list = []
+   
     with open(dir + '/' + file) as f:
             stripped = [s.strip() for s in f]
             for line in stripped:
                 if line == '':
-                    vol.append(0.0)
+                    volume_list.append(0.0)
+                    err_list.append(0.0)
                 else:
-                    vol.append(float(line))
-    return vol
+                    vol, err = line.split()
+                    volume_list.append(float(vol))
+                    err_list.append(float(err))
+    return volume_list, err_list
 
 def cross_section_calculation(BCI_hits, BCI_scale, volume_list, isotope): #func used to convert mass in ug/cm --> 1/barn
     rho_t_47Ti = (TARGET_47TI * CM_TO_BARN * AVAGADRO_NUM)/(MOLAR_MASS_47TI)
@@ -69,6 +73,24 @@ def cross_section_calculation(BCI_hits, BCI_scale, volume_list, isotope): #func 
         j +=1
     return cross_section_vals
 
+def error_handler(x_sec, vol_list, vol_err_list, BCI_hits):
+    '''
+    Returns a list of errors that correspond to the list of cross-sections generated for a
+    given peak
+    '''
+
+    # should do 15% of the BCI value and add to hdtv fit err or add 15% of the x_sec value
+    index = 0
+    errs = []
+    print("cross-sec list values", x_sec)
+    for _ in vol_list:
+        err_BCI = 0.15 * BCI_hits[index]
+        inside = (vol_err_list[index]/vol_list[index])**2 + (err_BCI/BCI_hits[index])**2
+        deltaX = np.sqrt( (vol_err_list[index]/vol_list[index])**2 + (err_BCI/BCI_hits[index])**2 ) * x_sec[index]
+        errs.append(deltaX)
+        index +=1
+    print(errs)
+    return errs
 
 def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
     #plot info stuff
@@ -104,13 +126,14 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
             for file in file_sets[i]:
                 miny=0.01
                 maxy=1
-                vol_list = volume_file_reader(dir, file)
+                vol_list, vol_err_list = volume_file_reader(dir, file)
                 fname = file.split('.')[0]
                 fname_list = fname.split('_')
                 plot_name = ' '.join(fname_list)
                 cross_sec = cross_section_calculation(BCI_hits, BCI_scale, vol_list, isotope)
+                finalError = error_handler(cross_sec, vol_list, vol_err_list, BCI_hits)
                 if (curr_row<row and curr_col<colz):
-                    ax[curr_row][curr_col].scatter(lab_angles, cross_sec, label=plot_name)
+                    ax[curr_row][curr_col].errorbar(lab_angles, cross_sec, finalError, label=plot_name, color='black', fmt='x', ecolor='red', capsize=2.0)
                     ax[curr_row][curr_col].minorticks_on()
                     ax[curr_row][curr_col].legend()
                     ax[curr_row][curr_col].set_yscale("log")
@@ -127,7 +150,7 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
                 elif(curr_col == colz):
                     curr_row+=1
                     curr_col = 0
-                    ax[curr_row][curr_col].scatter(lab_angles, cross_sec, label=plot_name)
+                    ax[curr_row][curr_col].errorbar(lab_angles, cross_sec, finalError, label=plot_name, color='black', fmt='x', ecolor='red', capsize=2.0)
                     ax[curr_row][curr_col].minorticks_on()
                     ax[curr_row][curr_col].legend()
                     ax[curr_row][curr_col].set_yscale("log")
@@ -138,13 +161,13 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
                             miny = 0.001
                         if val > maxy:
                             maxy = 10
-            
+           
                     ax[curr_row][curr_col].set_ylim(miny, maxy)
                     curr_col+=1
             plt.show()
             i+=1
         return
-    
+   
     # Hits here after if statement is true, plots the < 12 file case
     curr_row = 0
     curr_col = 0
@@ -152,13 +175,14 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
     for file in sorted_files:
         miny=0.01
         maxy=1
-        vol_list = volume_file_reader(dir, file)
+        vol_list, vol_err_list = volume_file_reader(dir, file)
         fname = file.split('.')[0]
         fname_list = fname.split('_')
         plot_name = ' '.join(fname_list)
         cross_sec = cross_section_calculation(BCI_hits, BCI_scale, vol_list, isotope)
+        finalError = error_handler(cross_sec, vol_list, vol_err_list, BCI_hits)
         if (curr_row<row and curr_col<colz):
-            ax[curr_row][curr_col].scatter(lab_angles, cross_sec)
+            ax[curr_row][curr_col].errorbar(lab_angles, cross_sec, finalError, label=plot_name, color='black', fmt='x', ecolor='red', capsize=2.0)
             ax[curr_row][curr_col].minorticks_on()
             ax[curr_row][curr_col].legend()
             ax[curr_row][curr_col].set_yscale("log")
@@ -175,7 +199,7 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
         elif(curr_col == colz):
             curr_row+=1
             curr_col = 0
-            ax[curr_row][curr_col].scatter(lab_angles, cross_sec)
+            ax[curr_row][curr_col].errorbar(lab_angles, cross_sec, finalError, label=plot_name, color='black', fmt='x', ecolor='red', capsize=2.0)
             ax[curr_row][curr_col].minorticks_on()
             ax[curr_row][curr_col].legend()
             ax[curr_row][curr_col].set_yscale("log")
@@ -205,11 +229,11 @@ def main():
     plotting(dir_47Ti, lab_angles, BCI_scale_47Ti, BCI_hits_47Ti, num_files, isotope_47Ti)
 
     # 49Ti Plots & Calculations
-    dir = os.getcwd()
-    dir_49Ti = dir + '/49Ti_peaks'
-    num_files = len(os.listdir(dir_49Ti))
-    isotope_49Ti = 49
-    plotting(dir_49Ti, lab_angles, BCI_scale_49Ti, BCI_hits_49Ti, num_files, isotope_49Ti)
+    # dir = os.getcwd()
+    # dir_49Ti = dir + '/49Ti_peaks'
+    # num_files = len(os.listdir(dir_49Ti))
+    # isotope_49Ti = 49
+    # plotting(dir_49Ti, lab_angles, BCI_scale_49Ti, BCI_hits_49Ti, num_files, isotope_49Ti)
 
 
 if __name__ == "__main__":
@@ -217,7 +241,7 @@ if __name__ == "__main__":
 
 
 '''
-Old Conditinal Statement that was used for file length < 16, but now I just use the indexing through 
+Old Conditinal Statement that was used for file length < 16, but now I just use the indexing through
 one file set instead, keeping just in case
 '''
 # elif (num_files <=16 ):
