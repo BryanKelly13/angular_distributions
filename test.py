@@ -41,12 +41,19 @@ def BCI_info_handler():
 
 
 def volume_file_reader(dir, file):
-    vol = []
+    volume_list = []
+    err_list = []
     with open(dir + '/' + file) as f:
             stripped = [s.strip() for s in f]
             for line in stripped:
-                vol.append(float(line))
-    return vol
+                if line == '':
+                    volume_list.append(0.0)
+                    err_list.append(0.0)
+                else:
+                    vol, err = line.split()
+                    volume_list.append(float(vol))
+                    err_list.append(float(err))
+    return vol, err_list
 
 def cross_section_47Ti(BCI_hits_47Ti, BCI_scale_47Ti, volume_list): #func used to convert mass in ug/cm --> 1/barn
     rho_t_47Ti = (TARGET_47TI * CM_TO_BARN * AVAGADRO_NUM)/(MOLAR_MASS_47TI)
@@ -88,7 +95,7 @@ def plotting(dir_47Ti, lab_angles, BCI_scale_47Ti, BCI_hits_47Ti, num_files):
     for file in sorted_files:
         miny=0.01
         maxy=1
-        vol_list = volume_file_reader(dir_47Ti, file)
+        vol_list, err_list = volume_file_reader(dir_47Ti, file)
         fname = file.split('.')[0]
         fname_list = fname.split('_')
         plot_name = ' '.join(fname_list)
