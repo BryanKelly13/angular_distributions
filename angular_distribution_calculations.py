@@ -85,11 +85,9 @@ def error_handler(x_sec, vol_list, vol_err_list, BCI_hits):
     print("cross-sec list values", x_sec)
     for _ in vol_list:
         err_BCI = 0.15 * BCI_hits[index]
-        inside = (vol_err_list[index]/vol_list[index])**2 + (err_BCI/BCI_hits[index])**2
         deltaX = np.sqrt( (vol_err_list[index]/vol_list[index])**2 + (err_BCI/BCI_hits[index])**2 ) * x_sec[index]
         errs.append(deltaX)
         index +=1
-    print(errs)
     return errs
 
 def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
