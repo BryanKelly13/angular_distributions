@@ -82,10 +82,12 @@ def error_handler(x_sec, vol_list, vol_err_list, BCI_hits):
     # should do 15% of the BCI value and add to hdtv fit err or add 15% of the x_sec value
     index = 0
     errs = []
-    print("cross-sec list values", x_sec)
     for _ in vol_list:
         err_BCI = 0.15 * BCI_hits[index]
-        deltaX = np.sqrt( (vol_err_list[index]/vol_list[index])**2 + (err_BCI/BCI_hits[index])**2 ) * x_sec[index]
+        if vol_list[index] == 0.0:
+            deltaX = 0.0
+        else:
+            deltaX = np.sqrt( (vol_err_list[index]/vol_list[index])**2 + (err_BCI/BCI_hits[index])**2 ) * x_sec[index]
         errs.append(deltaX)
         index +=1
     return errs
@@ -122,6 +124,7 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
             else:
                 fig.suptitle(r'$^{50}$Ti Excited States')
             for file in file_sets[i]:
+                print("Peak file", file)
                 miny=0.01
                 maxy=1
                 vol_list, vol_err_list = volume_file_reader(dir, file)
@@ -227,11 +230,11 @@ def main():
     plotting(dir_47Ti, lab_angles, BCI_scale_47Ti, BCI_hits_47Ti, num_files, isotope_47Ti)
 
     # 49Ti Plots & Calculations
-    # dir = os.getcwd()
-    # dir_49Ti = dir + '/49Ti_peaks'
-    # num_files = len(os.listdir(dir_49Ti))
-    # isotope_49Ti = 49
-    # plotting(dir_49Ti, lab_angles, BCI_scale_49Ti, BCI_hits_49Ti, num_files, isotope_49Ti)
+    dir = os.getcwd()
+    dir_49Ti = dir + '/49Ti_peaks'
+    num_files = len(os.listdir(dir_49Ti))
+    isotope_49Ti = 49
+    plotting(dir_49Ti, lab_angles, BCI_scale_49Ti, BCI_hits_49Ti, num_files, isotope_49Ti)
 
 
 if __name__ == "__main__":
