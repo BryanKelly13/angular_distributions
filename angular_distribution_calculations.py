@@ -124,7 +124,6 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
             else:
                 fig.suptitle(r'$^{50}$Ti Excited States')
             for file in file_sets[i]:
-                print("Peak file", file)
                 miny=0.01
                 maxy=1
                 vol_list, vol_err_list = volume_file_reader(dir, file)
