@@ -1,3 +1,4 @@
+import csv
 import os
 import numpy as np
 import time
@@ -18,26 +19,28 @@ TARGET_49TI = 413 # in micrograms/cm^2
 MOLAR_MASS_47TI = 4.70E7 #ug/mol
 TARGET_47TI = 441 # in micrograms/cm^2
 
-def BCI_info_handler():
-    BCI_hits_47Ti = []
-    BCI_scale_47Ti = []
+dir = os.getcwd()
 
-    BCI_hits_49Ti = []
-    BCI_scale_49Ti = []
-    with open("BCI_info_47Ti.txt") as f:
+def BCI_info_handler():
+    BCI_hits_48Ti = []
+    BCI_scale_48Ti = []
+
+    BCI_hits_50Ti = []
+    BCI_scale_50Ti = []
+    with open("BCI_info_48Ti.txt") as f:
         stripped = [s.strip() for s in f]
         for line in stripped:
             hits, scale = line.split()
-            BCI_hits_47Ti.append(float(hits))
-            BCI_scale_47Ti.append(float(scale))
+            BCI_hits_48Ti.append(float(hits))
+            BCI_scale_48Ti.append(float(scale))
    
-    with open("BCI_info_49Ti.txt") as f:
+    with open("BCI_info_50Ti.txt") as f:
         stripped = [s.strip() for s in f]
         for line in stripped:
             hits, scale = line.split()
-            BCI_hits_49Ti.append(float(hits))
-            BCI_scale_49Ti.append(float(scale))
-    return BCI_hits_47Ti, BCI_scale_47Ti, BCI_hits_49Ti, BCI_scale_49Ti
+            BCI_hits_50Ti.append(float(hits))
+            BCI_scale_50Ti.append(float(scale))
+    return BCI_hits_48Ti, BCI_scale_48Ti, BCI_hits_50Ti, BCI_scale_50Ti
 
 
 def volume_file_reader(dir, file):
@@ -65,9 +68,9 @@ def cross_section_calculation(BCI_hits, BCI_scale, volume_list, isotope): #func 
     for i in BCI_hits:
         Q_beam = (i * 1E-9 * BCI_scale[j])/(SAMPLING_RATE)
         N_beam = Q_beam / ELEMENTARY_CHARGE
-        if isotope == 47:
+        if isotope == 48:
             dsigma_domega = (volume_list[j] * 1000)/(N_beam * rho_t_47Ti * D_OMEGA_)  # cross-sec in mb/sr
-        elif isotope == 49:
+        elif isotope == 50:
             dsigma_domega = (volume_list[j] * 1000)/(N_beam * rho_t_49Ti * D_OMEGA_)  # cross-sec in mb/sr
         cross_section_vals.append(dsigma_domega)
         j +=1
@@ -78,8 +81,6 @@ def error_handler(x_sec, vol_list, vol_err_list, BCI_hits):
     Returns a list of errors that correspond to the list of cross-sections generated for a
     given peak
     '''
-
-    # should do 15% of the BCI value and add to hdtv fit err or add 15% of the x_sec value
     index = 0
     errs = []
     for _ in vol_list:
@@ -92,7 +93,18 @@ def error_handler(x_sec, vol_list, vol_err_list, BCI_hits):
         index +=1
     return errs
 
-def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
+def file_writer(energy, lab_angles, cross_sec, finalError, isotope):
+    path = dir + '/output_peak_files'
+    file = str(isotope) + "Ti_" + energy + "_keV.txt"
+    storefile = os.path.join(path, file)
+    with open(storefile, 'w') as f:
+        writer = csv.writer(f, delimiter='\t')
+        writer.writerows(zip(lab_angles, cross_sec, finalError))
+
+    print("Successfully wrote " + file + " to the output_peak_files folder")
+
+
+def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope, output_vals):
     #plot info stuff
     figure_size = (15,15)
 
@@ -102,7 +114,7 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
         fig, ax = plt.subplots(row, colz, squeeze=False, figsize=figure_size, constrained_layout=True)
         fig.supxlabel(r'Lab Angle [$\Theta_{lab}$]')
         fig.supylabel(r'Cross-Section [$\frac{mb}{sr}$]')
-        if isotope == 47:
+        if isotope == 48:
             fig.suptitle(r'$^{48}$Ti Excited States')
         else:
             fig.suptitle(r'$^{50}$Ti Excited States')
@@ -119,10 +131,11 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
             fig, ax = plt.subplots(colz, row, squeeze=False, figsize=figure_size, constrained_layout=True)
             fig.supxlabel(r'Lab Angle [$\Theta_{lab}$]')
             fig.supylabel(r'Cross-Section [$\frac{mb}{sr}$]')
-            if isotope == 47:
+            if isotope == 48:
                 fig.suptitle(r'$^{48}$Ti Excited States')
             else:
                 fig.suptitle(r'$^{50}$Ti Excited States')
+
             for file in file_sets[i]:
                 miny=0.01
                 maxy=1
@@ -132,6 +145,10 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
                 plot_name = ' '.join(fname_list)
                 cross_sec = cross_section_calculation(BCI_hits, BCI_scale, vol_list, isotope)
                 finalError = error_handler(cross_sec, vol_list, vol_err_list, BCI_hits)
+
+                if int(fname_list[0]) in output_vals:
+                    file_writer(fname_list[0], lab_angles, cross_sec, finalError, isotope)
+                    
                 if (curr_row<row and curr_col<colz):
                     ax[curr_row][curr_col].errorbar(lab_angles, cross_sec, finalError, label=plot_name, color='black', fmt='x', ecolor='red', capsize=2.0)
                     ax[curr_row][curr_col].minorticks_on()
@@ -181,6 +198,9 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
         plot_name = ' '.join(fname_list)
         cross_sec = cross_section_calculation(BCI_hits, BCI_scale, vol_list, isotope)
         finalError = error_handler(cross_sec, vol_list, vol_err_list, BCI_hits)
+        if fname_list[0] in output_vals:
+            file_writer(fname_list[0], lab_angles, cross_sec, finalError, isotope)
+
         if (curr_row<row and curr_col<colz):
             ax[curr_row][curr_col].errorbar(lab_angles, cross_sec, finalError, label=plot_name, color='black', fmt='x', ecolor='red', capsize=2.0)
             ax[curr_row][curr_col].minorticks_on()
@@ -216,37 +236,38 @@ def plotting(dir, lab_angles, BCI_scale, BCI_hits, num_files, isotope):
     plt.show()
 
 
+def peak_input(isotope):
+    output_vals = []
+    print("Enter desired peaks you want outputted to data files for " +str(isotope) + "Ti")
+    print("When done, enter -1")
+    while True:
+        peak = int(input("Peak [kev]: "))
+        if peak == -1:
+            break
+        else:
+            output_vals.append(peak)
+    return output_vals
+
+
 def main():
 
     lab_angles = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60]
-    BCI_hits_47Ti, BCI_scale_47Ti, BCI_hits_49Ti, BCI_scale_49Ti = BCI_info_handler()
+    BCI_hits_48Ti, BCI_scale_48Ti, BCI_hits_50Ti, BCI_scale_50Ti = BCI_info_handler()
 
     # 47Ti Plots & Calculations
-    dir = os.getcwd()
-    dir_47Ti = dir + '/47Ti_peaks'
-    num_files = len(os.listdir(dir_47Ti))
-    isotope_47Ti = 47
-    plotting(dir_47Ti, lab_angles, BCI_scale_47Ti, BCI_hits_47Ti, num_files, isotope_47Ti)
+    dir_48Ti = dir + '/48Ti_peaks'
+    num_files = len(os.listdir(dir_48Ti))
+    isotope_48Ti = 48
+    output_vals_48Ti = peak_input(isotope_48Ti)
+    plotting(dir_48Ti, lab_angles, BCI_scale_48Ti, BCI_hits_48Ti, num_files, isotope_48Ti, output_vals_48Ti)
 
     # 49Ti Plots & Calculations
-    dir = os.getcwd()
-    dir_49Ti = dir + '/49Ti_peaks'
-    num_files = len(os.listdir(dir_49Ti))
-    isotope_49Ti = 49
-    plotting(dir_49Ti, lab_angles, BCI_scale_49Ti, BCI_hits_49Ti, num_files, isotope_49Ti)
+    dir_50Ti = dir + '/50Ti_peaks'
+    num_files = len(os.listdir(dir_50Ti))
+    isotope_50Ti = 50
+    output_vals_50Ti = peak_input(isotope_50Ti)
+    plotting(dir_50Ti, lab_angles, BCI_scale_50Ti, BCI_hits_50Ti, num_files, isotope_50Ti, output_vals_50Ti)
 
 
 if __name__ == "__main__":
     main()
-
-
-'''
-Old Conditinal Statement that was used for file length < 16, but now I just use the indexing through
-one file set instead, keeping just in case
-'''
-# elif (num_files <=16 ):
-    #     row=4
-    #     colz =math.ceil(num_files/4)
-    #     fig, ax = plt.subplots(colz, row, squeeze=False, figsize=figure_size)
-    #     fig.supxlabel(r'Lab Angle [$\Theta_{lab}$]')
-    #     fig.supylabel(r'Cross-Section [$\frac{mb}{sr}$]')
