@@ -84,7 +84,7 @@ def error_handler(x_sec, vol_list, vol_err_list, BCI_hits):
     index = 0
     errs = []
     for _ in vol_list:
-        err_BCI = 0.15 * BCI_hits[index]
+        err_BCI = 0.20 * BCI_hits[index]
         if vol_list[index] == 0.0:
             deltaX = 0.0
         else:
